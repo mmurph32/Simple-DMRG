@@ -26,11 +26,21 @@ class SimpleMPS:
                 raise ValueError("Tensors' indices don't match")
 
         print("MPS is valid")
-        return 
+        return
+
+    def contract(self):
+        result = self.tensors[0]
+
+        for i in range(1, self.L):
+            result = np.tensordot(result, self.tensors[i], axes=[-1, 0])
+
+        result = np.squeeze(result)
+        result = result.reshape(self.d**self.L)
+        return result
 
 def product_state(phi, L):
     # create L tensors, each with shape (1, d, 1)
-    # put phi inside each tensor
+    # put phi inside each tensor eg. phi = [1, 0]
     # return an MPS made from those tensors
     tensors = []
     d = len(phi)
