@@ -1,10 +1,10 @@
 import numpy as np
-
+import time
 from dmrg.mps import product_state
 from dmrg.tfim import tfim_mpo
 from dmrg.sweep import sweep
 
-L = 12
+L = 100
 J = 1.0
 h = 1.0
 bond_dim = 4  # for full capture of an arbitrary state, need d^(L/2) 
@@ -12,17 +12,23 @@ bond_dim = 4  # for full capture of an arbitrary state, need d^(L/2)
 mps = product_state([1.0, 0.0], L)
 mpo = tfim_mpo(L, J, h)
 
+start = time.perf_counter()
+
 final_mps, ground_energy = sweep(
     mps, mpo,
     bond_dim=bond_dim,
     number_of_sweeps=20,
-    tol=1e-16
+    tol=1e-10 
 )
 
-print("Bond Dimension:", bond_dim)
-print("DMRG Ground Energy:", ground_energy)
+elapsed = time.perf_counter() - start
+
+print(f"Runtime: {elapsed:.2f} seconds")
 
 # H = mpo.contract()
 # exact_energy = np.linalg.eigvalsh(H)[0]
 # print("Exact:", exact_energy)
 # print("Difference:", abs(ground_energy - exact_energy))
+
+# Compare energy calculations
+

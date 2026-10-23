@@ -37,7 +37,8 @@ class SimpleMPO:
 
         result = np.squeeze(result)
 
-        ket_axes = list(range(0, 2*self.L, 2))
+        # Reorder to d_in, d_in, d_out, d_out
+        ket_axes = list(range(0, 2*self.L, 2)) 
         bra_axes = list(range(1, 2*self.L, 2))
         transpose_order = ket_axes + bra_axes
 

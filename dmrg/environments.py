@@ -72,3 +72,37 @@ def build_environments(mps, mpo, centre):
             R = np.einsum('abceafb->cef', R)
 
     return L, R
+
+
+def update_left_env(L, A, W):
+
+    # Contract ket with MPO
+    local = np.tensordot(A, W, axes=(1, 1))
+
+    # Contract physical output with bra
+    local = np.tensordot(
+        local, A.conj(), axes=(3, 1)
+    )
+
+    # Contract previous environment with local tensor
+    L_new = np.tensordot(L, local, axes=(0, 0))
+
+    # Contract matching virtual indices
+    L_new = np.einsum('abcaebf->cef', L_new)
+
+    return L_new
+
+
+def update_right_env(R, A, W):
+
+    local = np.tensordot(A, W, axes=(1, 1))
+
+    local = np.tensordot(
+        local, A.conj(), axes=(3, 1)
+    )
+
+    R_new = np.tensordot(R, local, axes=(0, 1))
+
+    R_new = np.einsum('abceafb->cef', R_new)
+
+    return R_new

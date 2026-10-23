@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 from dmrg.entanglement import entanglement_entropy
 from dmrg.central_charge import extract_central_charge
 
-L = 12
+L = 100
 J = 1.0
 h = 1.0
-bond_dim = 4  # for full capture of an arbitrary state, need d^(L/2) 
+bond_dim = 12  # for full capture of an arbitrary state, need d^(L/2) 
 
 mps = product_state([1.0, 0.0], L)
 mpo = tfim_mpo(L, J, h)
@@ -18,40 +18,38 @@ final_mps, ground_energy = sweep(
     mps, mpo,
     bond_dim=bond_dim,
     number_of_sweeps=20,
-    tol=1e-16
+    tol=1e-10
 )
 
 # Run this after DMRG has converged
 # %% Compare entanglement with exact diagonalisation
 
-import numpy as np
-import matplotlib.pyplot as plt
 
-# Construct and diagonalise the full Hamiltonian
-H = mpo.contract()
-eigenvalues, eigenvectors = np.linalg.eigh(H)
+# # Construct and diagonalise the full Hamiltonian
+# H = mpo.contract()
+# eigenvalues, eigenvectors = np.linalg.eigh(H)
 
-exact_energy = eigenvalues[0]
-psi_exact = eigenvectors[:, 0]
+# exact_energy = eigenvalues[0]
+# psi_exact = eigenvectors[:, 0]
 
-# Calculate exact entanglement entropy
-S_exact = []
+# # Calculate exact entanglement entropy
+# S_exact = []
 
-for ell in range(1, L):
+# for ell in range(1, L):
 
-    # Split Hilbert space into left and right subsystems
-    psi_matrix = psi_exact.reshape(2**ell, 2**(L-ell))
+#     # Split Hilbert space into left and right subsystems
+#     psi_matrix = psi_exact.reshape(2**ell, 2**(L-ell))
 
-    # Schmidt coefficients
-    lambdas = np.linalg.svd(
-        psi_matrix, compute_uv=False
-    )
+#     # Schmidt coefficients
+#     lambdas = np.linalg.svd(
+#         psi_matrix, compute_uv=False
+#     )
 
-    p = lambdas**2
-    p = p[p > 1e-15]
+#     p = lambdas**2
+#     p = p[p > 1e-15]
 
-    entropy = -np.sum(p * np.log(p))
-    S_exact.append(entropy)
+#     entropy = -np.sum(p * np.log(p))
+#     S_exact.append(entropy)
 
 # Calculate DMRG entropies
 S_dmrg = entanglement_entropy(final_mps)
@@ -59,7 +57,7 @@ S_dmrg = entanglement_entropy(final_mps)
 # Plot comparison
 ell_values = np.arange(1, L)
 
-plt.plot(ell_values, S_exact, "o-", label="Exact")
+#plt.plot(ell_values, S_exact, "o-", label="Exact")
 plt.plot(ell_values, S_dmrg, "x--", label="DMRG")
 
 plt.xlabel("Bond position")
@@ -72,10 +70,10 @@ plt.show()
 # Extract Central Charge
 
 c_dmrg = extract_central_charge(S_dmrg)[0]
-c_exact = extract_central_charge(S_exact)[0]
+#c_exact = extract_central_charge(S_exact)[0]
 
 print("DMRG Central Charge c =", c_dmrg)
-print("Exact Central Charge c =", c_exact)
+#print("Exact Central Charge c =", c_exact)
 
 #%%
 
