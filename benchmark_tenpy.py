@@ -1,49 +1,52 @@
-
+import cProfile
+import pstats
 import time
-import numpy as np
-import matplotlib.pyplot as plt
 
-# Your DMRG
 from dmrg.mps import product_state
 from dmrg.tfim import tfim_mpo
 from dmrg.sweep import sweep
-from dmrg.entanglement import entanglement_entropy
+from dmrg.idmrg import idmrg
+from dmrg.grow_and_sweep import grow_and_sweep
 
-# TeNPy
 from tenpy.algorithms import dmrg
 from tenpy.models.tf_ising import TFIChain
 from tenpy.networks.mps import MPS
 
 
-# %% Parameters
-
-L = 50
+# Parameters
+L = 100
 J = 1.0
 h = 1.0
-chi = 16
-n_sweeps = 5
+chi = 64
+max_sweeps = 20
+tol = 1e-10
 
-
-# %% Your DMRG
-
-mps = product_state([1.0, 0.0], L)
 mpo = tfim_mpo(L, J, h)
+mpo3 = tfim_mpo(3, J, h)
 
-start = time.perf_counter()
+results = {}
 
-final_mps, E_mine = sweep(
+
+# 1. Your finite DMRG
+mps = product_state([1.0, 0.0], L)
+profiler = cProfile.Profile()
+profiler.enable()
+
+mps, E = sweep(
     mps, mpo,
     bond_dim=chi,
-    number_of_sweeps=n_sweeps,
-    tol=0
+    number_of_sweeps=max_sweeps,
+    tol=tol
 )
 
-time_mine = time.perf_counter() - start
+profiler.disable()
 
-S_mine = entanglement_entropy(final_mps)
+print("\n--- Eigensolver profiling ---")
+pstats.Stats(profiler).sort_stats("cumulative").print_stats(20)
 
 
-# %% TeNPy DMRG
+# 4. TeNPy finite DMRG
+print("\n--- TeNPy Finite DMRG ---", flush=True)
 
 model = TFIChain({
     "L": L,
@@ -59,60 +62,54 @@ psi = MPS.from_product_state(
     bc="finite"
 )
 
-dmrg_params = {
+options = {
+    "active_sites": 2,
     "mixer": None,
-    "min_sweeps": n_sweeps,
-    "max_sweeps": n_sweeps,
-    "max_E_err": 1e-10,
+    "N_sweeps_check": 1,
+    "min_sweeps": 1,
+    "max_sweeps": max_sweeps,
+    "max_E_err": tol,
+    "max_S_err": float("inf"),
     "trunc_params": {
         "chi_max": chi,
-        "svd_min": 1e-12
+        "svd_min": 1e-12,
+        "trunc_cut": 1e-14
     }
 }
 
 start = time.perf_counter()
+info = dmrg.run(psi, model, options)
 
-info = dmrg.run(psi, model, dmrg_params)
-
-time_tenpy = time.perf_counter() - start
-
-E_tenpy = info["E"]
-S_tenpy = psi.entanglement_entropy()
-
-
-# %% Results
-
-print("\n" + "=" * 45)
-print(f"L = {L}, chi = {chi}, sweeps = {n_sweeps}")
-print("=" * 45)
-
-print(f"My DMRG energy:   {E_mine:.12f}")
-print(f"TeNPy energy:     {E_tenpy:.12f}")
-print(f"Energy difference: {abs(E_mine-E_tenpy):.3e}")
-
-print(f"\nMy runtime:       {time_mine:.3f} s")
-print(f"TeNPy runtime:    {time_tenpy:.3f} s")
-print(f"Runtime ratio:    {time_mine/time_tenpy:.2f}x")
-
-print(f"\nMy max chi:       {max(A.shape[2] for A in final_mps.tensors)}")
-print(f"TeNPy max chi:    {max(psi.chi)}")
+results["TeNPy"] = (
+    info["E"],
+    time.perf_counter() - start,
+    max(psi.chi)
+)
 
 
-# %% Entanglement comparison
+# Results
+print("\n" + "=" * 75)
+print(f"L = {L}, chi_max = {chi}, h = {h}")
+print("=" * 75)
 
-ell = np.arange(1, L)
+print(f"{'Method':<22} {'Energy':>19} {'Time (s)':>12} {'Max chi':>10}")
+print("-" * 75)
 
-plt.figure()
-plt.plot(ell, S_mine, "o-", label="My DMRG")
-plt.plot(ell, S_tenpy, "x--", label="TeNPy")
+for name, (E, elapsed, chi_actual) in results.items():
+    print(
+        f"{name:<22} {E:>19.12f} "
+        f"{elapsed:>12.3f} {chi_actual:>10}"
+    )
 
-plt.xlabel("Bond position")
-plt.ylabel("Entanglement entropy")
-plt.title(f"TFIM: L={L}, chi={chi}")
-plt.legend()
-plt.tight_layout()
-plt.show()
+print("-" * 75)
 
-print("\nMaximum entropy difference:",
-      np.max(np.abs(S_mine - S_tenpy)))
+E_ref = results["TeNPy"][0]
 
+for name, (E, _, _) in results.items():
+    print(
+        f"{name:<22} energy error vs TeNPy: "
+        f"{abs(E-E_ref):.3e}"
+    )
+
+print("\nTeNPy sweeps:",
+      info["sweep_statistics"]["sweep"][-1])

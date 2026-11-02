@@ -76,33 +76,38 @@ def build_environments(mps, mpo, centre):
 
 def update_left_env(L, A, W):
 
-    # Contract ket with MPO
-    local = np.tensordot(A, W, axes=(1, 1))
+    # L: (chi_L, D_L, chi_L)
+    # A: (chi_L, d, chi_R)
+    # W: (D_L, d_in, d_out, D_R)
 
-    # Contract physical output with bra
-    local = np.tensordot(
-        local, A.conj(), axes=(3, 1)
+    T = np.tensordot(L, A, axes=([0], [0]))
+    # (D_L, chi_L, d_in, chi_R)
+
+    T = np.tensordot(T, W, axes=([0, 2], [0, 1]))
+    # (chi_L, chi_R, d_out, D_R)
+
+    L_new = np.tensordot(
+        T, A.conj(), axes=([0, 2], [0, 1])
     )
-
-    # Contract previous environment with local tensor
-    L_new = np.tensordot(L, local, axes=(0, 0))
-
-    # Contract matching virtual indices
-    L_new = np.einsum('abcaebf->cef', L_new)
+    # (chi_R, D_R, chi_R)
 
     return L_new
 
 
 def update_right_env(R, A, W):
 
-    local = np.tensordot(A, W, axes=(1, 1))
+    # Contract ket with right environment
+    T = np.tensordot(A, R, axes=([2], [0]))
+    # (chi_L, d_in, D_R, chi_R)
 
-    local = np.tensordot(
-        local, A.conj(), axes=(3, 1)
+    # Contract MPO
+    T = np.tensordot(T, W, axes=([1, 2], [1, 3]))
+    # (chi_L, chi_R, D_L, d_out)
+
+    # Contract bra
+    R_new = np.tensordot(
+        T, A.conj(), axes=([1, 3], [2, 1])
     )
-
-    R_new = np.tensordot(R, local, axes=(0, 1))
-
-    R_new = np.einsum('abceafb->cef', R_new)
+    # (chi_L, D_L, chi_L)
 
     return R_new

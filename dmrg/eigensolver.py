@@ -4,61 +4,44 @@ from scipy.sparse.linalg import LinearOperator, eigsh
 from dmrg.fast_eff_action import effective_action_fast
 from dmrg.effective_hamiltonian import effective_action_matrix_free
 
-# def eigensolver(mps, mpo, centre, theta):
 
-#     theta_shape = theta.shape
+def right_canonicalize(mps):
 
-#     def apply_H(vector):
-#         theta = vector.reshape(theta_shape)
-#         result = effective_action(mps, mpo, centre, theta)
-#         return result.reshape(-1)
+    for i in range(mps.L - 1, 0, -1):
 
+        A = mps.tensors[i]
+        chi_L, d, chi_R = A.shape
 
-#     dim = theta.size
+        Q, R = np.linalg.qr(
+            A.reshape(chi_L, d * chi_R).T,
+            mode="reduced"
+        )
 
-#     H = LinearOperator(
-#         shape=(dim, dim),
-#         matvec=apply_H
-#     )
+        chi_new = Q.shape[1]
 
-#     e_value, e_vector = eigsh(H, k=1, which="SA")
+        mps.tensors[i] = Q.T.reshape(chi_new, d, chi_R)
 
-#     e_vector = e_vector[:, 0].reshape(theta_shape)
+        mps.tensors[i - 1] = np.tensordot(
+            mps.tensors[i - 1],
+            R.T,
+            axes=(2, 0)
+        )
 
-#     return e_value[0], e_vector
+    # The first tensor now contains the overall norm.
+    mps.tensors[0] /= np.linalg.norm(mps.tensors[0])
 
-# from dmrg.environments import build_environments
-
-# def eigensolver(mps, mpo, centre, theta):
-
-#     theta_shape = theta.shape
-
-#     L, R = build_environments(mps, mpo, centre)
-
-#     def apply_H(vector):
-#         theta = vector.reshape(theta_shape)
-#         result = effective_action(mpo, centre, theta, L, R)
-#         return result.reshape(-1)
-
-#     dim = theta.size
-
-#     H = LinearOperator(
-#         shape=(dim, dim),
-#         matvec=apply_H
-#     )
-
-#     e_value, e_vector = eigsh(H, k=1, which="SA")
-
-#     e_vector = e_vector[:, 0].reshape(theta_shape)
-
-#     return e_value[0], e_vector
-
+    return mps
 
 def eigensolver(mps, mpo, centre, theta, L_env, R_env):
 
     theta_shape = theta.shape
 
+    n_matvec = 0
+
     def apply_H(vector):
+        nonlocal n_matvec
+        n_matvec += 1
+
         theta_trial = vector.reshape(theta_shape)
 
         result = effective_action_matrix_free(
@@ -74,7 +57,16 @@ def eigensolver(mps, mpo, centre, theta, L_env, R_env):
         matvec=apply_H
     )
 
-    e_value, e_vector = eigsh(H, k=1, which="SA")
+    e_value, e_vector = eigsh(
+    H,
+    k=1,
+    which="SA",
+    v0=theta.reshape(-1),
+    tol=1e-12
+    )
+
+    if centre % 20 == 0:
+        print(f"Bond {centre}: {n_matvec} matvecs")
 
     e_vector = e_vector[:, 0].reshape(theta_shape)
 
