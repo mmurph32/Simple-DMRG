@@ -3,6 +3,7 @@ from dmrg.effective_hamiltonian import effective_action
 from scipy.sparse.linalg import LinearOperator, eigsh
 from dmrg.fast_eff_action import effective_action_fast
 from dmrg.effective_hamiltonian import effective_action_matrix_free
+from dmrg.lanczos import lanczos_ground_state
 
 
 def right_canonicalize(mps):
@@ -32,7 +33,7 @@ def right_canonicalize(mps):
 
     return mps
 
-def eigensolver(mps, mpo, centre, theta, L_env, R_env):
+def eigensolver(mps, mpo, centre, theta, L_env, R_env, tol=1e-12, ncv=12, debug=False):
 
     theta_shape = theta.shape
 
@@ -62,11 +63,9 @@ def eigensolver(mps, mpo, centre, theta, L_env, R_env):
     k=1,
     which="SA",
     v0=theta.reshape(-1),
-    tol=1e-12
+    tol=tol,
+    ncv=min(ncv, dim)
     )
-
-    if centre % 20 == 0:
-        print(f"Bond {centre}: {n_matvec} matvecs")
 
     e_vector = e_vector[:, 0].reshape(theta_shape)
 

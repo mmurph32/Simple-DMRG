@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from dmrg.idmrg import idmrg
 from dmrg.sweep import sweep
 from dmrg.tfim import tfim_mpo

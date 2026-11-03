@@ -57,7 +57,7 @@ from tqdm import tqdm
 #     return mps, E_new
 
 
-def sweep(mps, mpo, bond_dim, number_of_sweeps, tol):
+def sweep(mps, mpo, bond_dim, number_of_sweeps, tol, verbose=True):
 
     E_prev = energy(mps, mpo)
 
@@ -132,7 +132,11 @@ def sweep(mps, mpo, bond_dim, number_of_sweeps, tol):
             )
 
         E_new = energy(mps, mpo)
-        print("Sweep", n+1, "finsihed.")
+        if verbose:
+            print(
+                f"Sweep {n+1}/{number_of_sweeps} completed",
+                flush=True
+            )
 
         if abs(E_new - E_prev) < tol:
             print("Tolerance reached after", n+1, "sweeps.")

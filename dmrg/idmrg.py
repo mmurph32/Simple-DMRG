@@ -139,11 +139,11 @@ def idmrg(
         previous_energy = E
 
         # Print current iteration 
-        if verbose and (L % 10 == 0 or L == 2 or L == max_sites): # Print for every 10 growths
-            bulk = 'n/a' if e_bulk is None else f'{e_bulk:.12f}'
+        if verbose and (L % 10 == 0 or L == 2 or L == max_sites):
             print(
-                f'L={L:4d} chi={chi_new:4d} '
-                f'E={E:.12f} bulk e={bulk}',
+                f"Growth: L={L:4d}/{max_sites} "
+                f"chi={chi_new:4d} "
+                f"E={E:.10f}",
                 flush=True
             )
 
