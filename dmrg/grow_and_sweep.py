@@ -72,7 +72,8 @@ def grow_and_sweep(
         mpo,
         bond_dim=chi_max,
         number_of_sweeps=number_of_sweeps,
-        tol=tol
+        tol=tol,
+        verbose=verbose
     )
 
     if verbose:
