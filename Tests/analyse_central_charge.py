@@ -5,10 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Load results
-data = np.load(
-    "central_charge_results.npz",
-    allow_pickle=True
-)
 
 #data = np.load("central_charge_results.npz", allow_pickle=True)
 data = np.load("hard_boson_c_results.npz", allow_pickle=True)

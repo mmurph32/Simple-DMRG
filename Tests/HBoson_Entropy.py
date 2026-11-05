@@ -13,13 +13,13 @@ from dmrg.central_charge import fit_central_charge
 
 
 # Parameters: approximate Potts critical point
-L = 200
+L = 98
 w = 1.0
-U = -1.308
-V = 0.0
+U = 3.0299
+V = -3.3302
 penalty = 50.0
 
-chi = 64
+chi = 12
 tol = 1e-10
 
 

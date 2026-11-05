@@ -10,7 +10,7 @@ S = np.load("hard_boson_entropy.npy")
 L = len(S) + 1
 
 # Calabrese-Cardy fit
-c, slope, intercept, x = fit_central_charge(S, trim=0)
+c, slope, intercept, x = fit_central_charge(S, trim=10)
 
 print(f"Central charge: c = {c:.6f}")
 
