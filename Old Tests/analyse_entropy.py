@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from dmrg.central_charge import fit_central_charge
 
 # Load entropy
-S = np.load("hard_boson_entropy.npy")
+S = np.load("anyon_entropy.npy")
 L = len(S) + 1
 
 # Calabrese-Cardy fit

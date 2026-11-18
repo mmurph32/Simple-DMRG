@@ -14,17 +14,17 @@ def right_canonicalize(mps):
         chi_L, d, chi_R = A.shape
 
         Q, R = np.linalg.qr(
-            A.reshape(chi_L, d * chi_R).T,
+            A.reshape(chi_L, d * chi_R).conj().T,
             mode="reduced"
         )
 
         chi_new = Q.shape[1]
 
-        mps.tensors[i] = Q.T.reshape(chi_new, d, chi_R)
+        mps.tensors[i] = Q.conj().T.reshape(chi_new, d, chi_R)
 
         mps.tensors[i - 1] = np.tensordot(
             mps.tensors[i - 1],
-            R.T,
+            R.conj().T,
             axes=(2, 0)
         )
 
@@ -55,7 +55,9 @@ def eigensolver(mps, mpo, centre, theta, L_env, R_env, tol=1e-12, ncv=12, debug=
     
     H = LinearOperator(
         shape=(dim, dim),
-        matvec=apply_H
+        matvec=apply_H,
+        dtype=np.result_type(theta.dtype, mpo.mpo_tensors[centre].dtype,
+                             L_env.dtype, R_env.dtype)
     )
 
     e_value, e_vector = eigsh(
