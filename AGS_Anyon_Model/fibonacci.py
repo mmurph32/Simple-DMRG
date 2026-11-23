@@ -138,7 +138,8 @@ def fibonacci_mpo(L, jeff, penalty=75.0, theta=6*np.pi/5):
     return SimpleMPO(_sum_mpos(terms))
 
 
-def fibonacci_bulk(jeff, penalty=75.0, theta=6*np.pi/5):
+def fibonacci_bulk(jeff, penalty=75.0, theta=6*np.pi/5,
+                   x_final=1, boundary_penalty=None):
     """Constant-bond MPO automaton. Returns (left, even, odd, right).
 
     Site labels are fusion-path labels (0=vacuum, 1=tau).
@@ -198,15 +199,26 @@ def fibonacci_bulk(jeff, penalty=75.0, theta=6*np.pi/5):
                 continue
             W[site_parity][np.ix_(channels[-1], range(2), range(2), [1])] += pieces[-1]
 
-    # Boundary: start in ready channel 0 and finish in done channel 1.
-    return W[0][0:1], W[0], W[1], W[1][:, :, :, 1:2]
+    # Boundary charges: x_0 = vacuum (0), x_{L-1} = x_final.
+    # Boundary penalties are applied only to the first and last sites.
+    if x_final not in (0, 1):
+        raise ValueError('x_final must be 0 (vacuum) or 1 (tau)')
+    bp = penalty if boundary_penalty is None else boundary_penalty
+    first = W[0][0:1].copy()
+    last = W[1][:, :, :, 1:2].copy()
+    first[0, :, :, 1] += bp * np.diag([0, 1])
+    last[0, :, :, 0] += bp * np.diag([int(x_final == 1),
+                                      int(x_final == 0)])
+    return first, W[0], W[1], last
 
 
-def fibonacci_scalable_mpo(L, jeff, penalty=75.0, theta=6*np.pi/5):
+def fibonacci_scalable_mpo(L, jeff, penalty=75.0, theta=6*np.pi/5,
+                           x_final=1, boundary_penalty=None):
     """Open-chain fixed-bond MPO, even L >= 4."""
     from dmrg.mpo import SimpleMPO
     if L < 4 or L % 2:
         raise ValueError('L must be even and >= 4')
-    first, even, odd, last = fibonacci_bulk(jeff, penalty, theta)
+    first, even, odd, last = fibonacci_bulk(jeff, penalty, theta,
+                                          x_final, boundary_penalty)
     return SimpleMPO([first] + [even if j%2 == 0 else odd
                                 for j in range(1, L-1)] + [last])

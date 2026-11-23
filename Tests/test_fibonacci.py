@@ -6,19 +6,23 @@ import numpy as np
 from AGS_Anyon_Model.anyon_idmrg import anyon_grow_and_sweep
 from dmrg.entanglement import entanglement_entropy
 
+chi = 64
+L = 200
+
 mps, E, E_before, history = anyon_grow_and_sweep(
     jeff=-1.3,
-    chi_max=32,
-    max_sites=100,
+    chi_max=chi,
+    max_sites=L,
     penalty=50,
     number_of_sweeps=2,
-    tol=1e-7,
-    verbose=True
+    tol=1e-8,
+    verbose=True,
+    x_final=0 # (0, 1) = (1, tau)
 )
 
 # Entanglement entropy
 S = entanglement_entropy(mps)
 
-np.save("anyon_entropy.npy", S)
+np.save(f"anyon_entropy_L={L}_chi={chi}.npy", S)
 
 print("Entropy saved.")

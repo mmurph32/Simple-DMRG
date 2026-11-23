@@ -2,10 +2,11 @@
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 import numpy as np
-
-from AGS_Anyon_Model.fibonacci import fibonacci_bulk, fibonacci_scalable_mpo
+from AGS_Anyon_Model.compressed import (
+    fibonacci_small_bulk as fibonacci_bulk,
+    fibonacci_small_mpo as fibonacci_scalable_mpo
+)
 from dmrg.mpo import SimpleMPO
 from dmrg.mps import SimpleMPS
 from dmrg.eigensolver import eigensolver, right_canonicalize
@@ -15,16 +16,17 @@ from dmrg.energy import energy
 
 
 def anyon_idmrg(jeff, chi_max, max_sites, penalty=75.0,
-                svd_min=1e-12, verbose=True):
+                svd_min=1e-12, verbose=True, x_final=1, boundary_penalty=None):
     """Grow by two fusion labels, keeping the alternating MPO parity."""
     if max_sites < 4 or max_sites % 2:
         raise ValueError('max_sites must be even and >= 4')
 
-    first, even, odd, last = fibonacci_bulk(jeff, penalty)
+    first, even, odd, last = fibonacci_bulk(
+        jeff, penalty, x_final=x_final, boundary_penalty=boundary_penalty)
     left_env = np.ones((1, 1, 1), dtype=complex)
     right_env = np.ones((1, 1, 1), dtype=complex)
     schmidt = np.ones(1)
-    phi = np.array([1, 1], dtype=complex) / np.sqrt(2)  # tau labels, allowed initial state
+    phi = np.array([1, 1], dtype=complex) / np.sqrt(2)  # nonzero overlap with both boundary sectors
     left_sites, right_sites, history = [], [], []
     previous_energy = None
 
@@ -73,10 +75,14 @@ def anyon_idmrg(jeff, chi_max, max_sites, penalty=75.0,
 
 
 def anyon_grow_and_sweep(jeff, chi_max, max_sites, penalty=75.0,
-                         number_of_sweeps=10, tol=1e-9, verbose=True):
-    mpo = fibonacci_scalable_mpo(max_sites, jeff, penalty)
+                         number_of_sweeps=10, tol=1e-9, verbose=True,
+                         x_final=1, boundary_penalty=None):
+    mpo = fibonacci_scalable_mpo(
+        max_sites, jeff, penalty, x_final=x_final,
+        boundary_penalty=boundary_penalty)
     mps, history = anyon_idmrg(jeff, chi_max, max_sites, penalty,
-                              verbose=verbose)
+                              verbose=verbose, x_final=x_final,
+                              boundary_penalty=boundary_penalty)
     mps = right_canonicalize(mps)
     E_before = energy(mps, mpo)
     mps, E_after = sweep(mps, mpo, bond_dim=chi_max,

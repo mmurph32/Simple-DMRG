@@ -65,7 +65,7 @@ def eigensolver(mps, mpo, centre, theta, L_env, R_env, tol=1e-12, ncv=12, debug=
     k=1,
     which="SA",
     v0=theta.reshape(-1),
-    tol=tol,
+    tol=1e-8,
     ncv=min(ncv, dim)
     )
 
