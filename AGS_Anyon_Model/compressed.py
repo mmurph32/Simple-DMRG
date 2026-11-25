@@ -13,7 +13,8 @@ def _row_basis(rows, tol=1e-11):
 
 
 def fibonacci_small_bulk(jeff, penalty=75.0, theta=6*np.pi/5,
-                         x_final=1, boundary_penalty=None):
+                         x_final=1, boundary_penalty=None,
+                         right_parity=1):
 
     first, even, odd, last = fibonacci_bulk(
         jeff, penalty, theta, x_final, boundary_penalty
@@ -72,9 +73,11 @@ def fibonacci_small_bulk(jeff, penalty=75.0, theta=6*np.pi/5,
         optimize=True
     )
 
+    B_right = B1 if right_parity == 1 else B0
+
     reduced_last = np.einsum(
         'ia,astb->istb',
-        B1, last,
+        B_right, last,
         optimize=True
     )
 
@@ -86,15 +89,20 @@ def fibonacci_small_bulk(jeff, penalty=75.0, theta=6*np.pi/5,
     )
 
 
+
 def fibonacci_small_mpo(L, jeff, penalty=75.0,
                         theta=6*np.pi/5,
                         x_final=1, boundary_penalty=None):
 
-    if L < 4 or L % 2:
-        raise ValueError('L must be even and >= 4')
+    if L < 4:
+        raise ValueError("L must be >= 4")
+
+    right_parity = (L - 1) % 2
 
     first, even, odd, last = fibonacci_small_bulk(
-        jeff, penalty, theta, x_final, boundary_penalty
+        jeff, penalty, theta,
+        x_final, boundary_penalty,
+        right_parity=right_parity
     )
 
     return SimpleMPO(

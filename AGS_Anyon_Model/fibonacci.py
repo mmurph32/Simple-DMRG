@@ -113,8 +113,7 @@ def fibonacci_mpo(L, jeff, penalty=75.0, theta=6*np.pi/5):
     """Exact finite-chain MPO matching hamiltonian_dense(L,...).
 
     This reference implementation uses a direct sum of local-term MPOs;
-    its bond dimension grows with L. It is NOT yet a fixed-bond bulk MPO
-    suitable for the existing translation-invariant idmrg() growth routine.
+    its bond dimension grows with L. 
     """
     from dmrg.mpo import SimpleMPO
     if L < 4:
@@ -160,11 +159,11 @@ def fibonacci_bulk(jeff, penalty=75.0, theta=6*np.pi/5,
         terms.append((None, _operator_tt(jeff*P, 3)))
     if penalty != 0:
         terms.append((None, _operator_tt(penalty*forbidden, 2)))
-    for parity in (0, 1):
-        alpha = np.exp(((-1)**(parity+1))*1j*theta)
-        product = P0 @ P1
-        ring = -(alpha*product + alpha.conjugate()*product.conj().T)
-        terms.append((parity, _operator_tt(ring, 4)))
+    # for parity in (0, 1):
+    #     alpha = np.exp(((-1)**(parity+1))*1j*theta)
+    #     product = P0 @ P1
+    #     ring = -(alpha*product + alpha.conjugate()*product.conj().T) *0 #TEST  H_ring = 0 -> GC Hamiltonian
+    #     terms.append((parity, _operator_tt(ring, 4)))
 
     # channel 0: ready to start a term; channel 1: term finished.
     # Interior channels carry the TT bonds of local operators.
@@ -202,13 +201,13 @@ def fibonacci_bulk(jeff, penalty=75.0, theta=6*np.pi/5,
     # Boundary charges: x_0 = vacuum (0), x_{L-1} = x_final.
     # Boundary penalties are applied only to the first and last sites.
     if x_final not in (0, 1):
-        raise ValueError('x_final must be 0 (vacuum) or 1 (tau)')
+         raise ValueError('x_final must be 0 (vacuum) or 1 (tau)')
     bp = penalty if boundary_penalty is None else boundary_penalty
     first = W[0][0:1].copy()
     last = W[1][:, :, :, 1:2].copy()
     first[0, :, :, 1] += bp * np.diag([0, 1])
     last[0, :, :, 0] += bp * np.diag([int(x_final == 1),
-                                      int(x_final == 0)])
+                                       int(x_final == 0)])
     return first, W[0], W[1], last
 
 
